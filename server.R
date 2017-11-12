@@ -9,9 +9,9 @@
 
 library(shiny)
 
-# Define server logic required to draw a histogram
 shinyServer(function(input, output) {
    
+  # Render the pairs plots.    
   output$pairsPlot <- renderPlot({
     k <- input$k
     predictorNames <- input$predictors
@@ -25,6 +25,17 @@ shinyServer(function(input, output) {
     }
   })
   
+  
+  #' Creates the panels for 'pairs' showing the correlation value.
+  #'
+  #' @param x X predictor.
+  #' @param y Y predictor.
+  #' @param digits No of digits to display.
+  #' @param prefix Prefix, if any.
+  #' @param cex.cor The scaling factor.
+  #' @param ... 
+  #'
+  #' @return The text.
   panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...) { 
       usr <- par("usr"); on.exit(par(usr)) 
       par(usr = c(0, 1, 0, 1)) 
@@ -35,19 +46,24 @@ shinyServer(function(input, output) {
       text(0.5, 0.5, txt, cex = cex.cor * r) 
   } 
   
-  panel.hist <- function(x, ...) {
-      usr <- par("usr"); on.exit(par(usr))
-      par(usr = c(usr[1:2], 0, 1.5) )
-      h <- hist(x, plot = FALSE, breaks=6)
-      breaks <- h$breaks; nB <- length(breaks)
-      y <- h$counts; y <- y/max(y)
-      rect(breaks[-nB], 0, breaks[-1], y, col = "grey", ...)
-  }
-  
+  #' Calculate moving average.
+  #'
+  #' @param x Data values.
+  #' @param k Size of the moving window.
+  #'
+  #' @return The moving averages.
   .mav <- function(x, k) {
       rollmean(x, k, align="left", fill=c(NA, NA, NA))
   }
   
+  #' Preprocess data for plotting. Calculates moving averages and imputes 
+  #' missing values.
+  #'
+  #' @param data Fitbit data.
+  #' @param k Days of the moving average window.
+  #' @param predictors An array of selected predictors.
+  #'
+  #' @return A data frame containing data for plotting.
   calories.vs.weightloss <- function(data, k=7, predictors) {
       avgSleep <- median(data$minutes.asleep, na.rm=T)
       if (length(predictors) > 1) { 
@@ -76,9 +92,9 @@ shinyServer(function(input, output) {
                      afternoon.snack.mav = .mav(ifelse(is.na(afternoon.snack), 0, afternoon.snack), k),
                      after.dinner.mav = .mav(ifelse(is.na(after.dinner), 0, after.dinner), k),
                      anytime.mav = .mav(ifelse(is.na(anytime), 0, anytime), k)
-          ) %>%
-          select(predictors) %>%
-          na.omit(weight.change)
+              ) %>%
+              select(predictors) %>%
+              na.omit(weight.change)
       } else { 
           result <- NULL
       }
